@@ -1,0 +1,7 @@
+mercury version 0.2
+ * includes a Self Assisted I/O library (SAIO) implementation of the functionalities contained in 
+   mercury version 0.1
+
+mercury version 0.1
+ * provides an AdviceManager and an Assisted I/O library (AIO) to feed hints into file systems 
+   in a transparent manner to the user.

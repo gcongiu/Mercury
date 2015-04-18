@@ -1,0 +1,161 @@
+Index: include/linux/aio.h
+===================================================================
+--- include/linux/aio.h	(revision 1)
++++ include/linux/aio.h	(working copy)
+@@ -34,6 +34,7 @@
+ /* #define KIF_LOCKED		0 */
+ #define KIF_KICKED		1
+ #define KIF_CANCELLED		2
++#define KIF_FORCE_READ_AHEAD	3 // new flag for POSIX_FADV_WILLNEED handling in generic_file_aio_read
+ 
+ #define kiocbTryLock(iocb)	test_and_set_bit(KIF_LOCKED, &(iocb)->ki_flags)
+ #define kiocbTryKick(iocb)	test_and_set_bit(KIF_KICKED, &(iocb)->ki_flags)
+@@ -208,6 +209,7 @@
+ extern unsigned aio_max_size;
+ 
+ #ifdef CONFIG_AIO
++extern void wait_on_retry_sync_kiocb(struct kiocb *iocb);
+ extern ssize_t wait_on_sync_kiocb(struct kiocb *iocb);
+ extern int aio_put_req(struct kiocb *iocb);
+ extern void kick_iocb(struct kiocb *iocb);
+Index: fs/read_write.c
+===================================================================
+--- fs/read_write.c	(revision 1)
++++ fs/read_write.c	(working copy)
+@@ -256,7 +256,7 @@
+ 	return count > MAX_RW_COUNT ? MAX_RW_COUNT : count;
+ }
+ 
+-static void wait_on_retry_sync_kiocb(struct kiocb *iocb)
++void wait_on_retry_sync_kiocb(struct kiocb *iocb)
+ {
+ 	set_current_state(TASK_UNINTERRUPTIBLE);
+ 	if (!kiocbIsKicked(iocb))
+@@ -265,6 +265,7 @@
+ 		kiocbClearKicked(iocb);
+ 	__set_current_state(TASK_RUNNING);
+ }
++EXPORT_SYMBOL(wait_on_retry_sync_kiocb);
+ 
+ ssize_t do_sync_read(struct file *filp, char __user *buf, size_t len, loff_t *ppos)
+ {
+Index: mm/filemap.c
+===================================================================
+--- mm/filemap.c	(revision 1)
++++ mm/filemap.c	(working copy)
+@@ -1299,6 +1299,22 @@
+ 	file_accessed(filp);
+ }
+ 
++int file_read_actor_dummy(read_descriptor_t *desc, struct page *page,
++			unsigned long offset, unsigned long size)
++{
++	unsigned long count = desc->count;
++
++	if (size > count)
++		size = count;
++
++	// pretend the whole data has been transfered to used mode buffer
++	
++	desc->count = count - size;
++	desc->written += size;
++	desc->arg.buf += size;
++	return size;
++}
++
+ int file_read_actor(read_descriptor_t *desc, struct page *page,
+ 			unsigned long offset, unsigned long size)
+ {
+@@ -1463,7 +1479,14 @@
+ 		if (desc.count == 0)
+ 			continue;
+ 		desc.error = 0;
+-		do_generic_file_read(filp, ppos, &desc, file_read_actor);
++		if (iocb->ki_flags == KIF_FORCE_READ_AHEAD)
++		{
++			do_generic_file_read(filp, ppos, &desc, file_read_actor_dummy);
++		}
++		else
++		{
++			do_generic_file_read(filp, ppos, &desc, file_read_actor);
++		}
+ 		retval += desc.written;
+ 		if (desc.error) {
+ 			retval = retval ?: desc.error;
+Index: mm/fadvise.c
+===================================================================
+--- mm/fadvise.c	(revision 1)
++++ mm/fadvise.c	(working copy)
+@@ -11,6 +11,8 @@
+ #include <linux/file.h>
+ #include <linux/fs.h>
+ #include <linux/mm.h>
++#include <linux/mount.h>
++#include <linux/dcache.h>
+ #include <linux/pagemap.h>
+ #include <linux/backing-dev.h>
+ #include <linux/pagevec.h>
+@@ -28,12 +30,15 @@
+ SYSCALL_DEFINE(fadvise64_64)(int fd, loff_t offset, loff_t len, int advice)
+ {
+ 	struct file *file = fget(fd);
++	struct file *local;		//local file object
+ 	struct address_space *mapping;
+ 	struct backing_dev_info *bdi;
++	struct kiocb kiocb;
++	struct iovec iov;
+ 	loff_t endbyte;			/* inclusive */
+ 	pgoff_t start_index;
+ 	pgoff_t end_index;
+-	unsigned long nrpages;
++	//unsigned long nrpages;
+ 	int ret = 0;
+ 
+ 	if (!file)
+@@ -94,23 +99,30 @@
+ 		spin_unlock(&file->f_lock);
+ 		break;
+ 	case POSIX_FADV_WILLNEED:
+-		if (!mapping->a_ops->readpage) {
+-			ret = -EINVAL;
+-			break;
++		local = dentry_open(dget(file->f_dentry), mntget(file->f_vfsmnt), O_RDONLY, current->cred);
++		local->f_mode |= FMODE_RANDOM;		//disable read-ahead for the local file object
++		init_sync_kiocb(&kiocb, local);		//do not alter the read-ahead state of current read operations
++		kiocb.ki_flags = KIF_FORCE_READ_AHEAD;	//new flag to avoid copy_to_user in do_generic_file_read
++		if (!len)
++		{
++			len = i_size_read(mapping->host) - offset;
++			//len = ~0UL;			//this won't work because of generic_segment_checks() in generic_file_aio_read()
+ 		}
+-
+-		/* First and last PARTIAL page! */
+-		start_index = offset >> PAGE_CACHE_SHIFT;
+-		end_index = endbyte >> PAGE_CACHE_SHIFT;
+-
+-		/* Careful about overflow on the "+1" */
+-		nrpages = end_index - start_index + 1;
+-		if (!nrpages)
+-			nrpages = ~0UL;
+-		
+-		ret = force_page_cache_readahead(mapping, file,
+-				start_index,
+-				nrpages);
++		iov.iov_base = NULL;			//no user space buffer to copy to from page cache
++		iov.iov_len = len;
++		kiocb.ki_pos = offset;
++		kiocb.ki_left = len;
++		for (;;)
++		{
++			ret = file->f_op->aio_read(&kiocb, &iov, 1, kiocb.ki_pos);
++			if (ret != -EIOCBRETRY)
++				break;
++			wait_on_retry_sync_kiocb(&kiocb);
++		}
++		if (-EIOCBQUEUED == ret)
++			ret = wait_on_sync_kiocb(&kiocb);
++		fput(local);				//destroy the local file object: fput() will call dput(), mntput() for you to
++							//decrement the dentry and mnt counter incremented before by dget() and mntget()
+ 		if (ret > 0)
+ 			ret = 0;
+ 		break;

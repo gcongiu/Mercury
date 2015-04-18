@@ -1,0 +1,95 @@
+#!/bin/bash
+
+show_help() {
+cat << EOF
+Usage: $0 [options]
+
+options:
+  -h       show this message and exit
+  -p PROG  program to run
+  -a ARGS  string with arguments to be passed to program
+  -c CONF  configuration file to be used by mercury
+  -d       drop caches before running PROG
+EOF
+}
+
+# acquire inputs
+DROP=0
+PROG=
+CONF=
+OPTIND=1
+while getopts "hp:a:c:d" opt; do
+    case "$opt" in
+        h)  show_help
+            exit 0
+            ;;
+        p)  PROG=$OPTARG
+            ;;
+        a)  ARGS=$OPTARG
+            ;;
+        c)  CONF=$OPTARG
+            ;;
+        d)  DROP=1
+            ;;
+        *)  show_help
+            exit 1
+            ;;
+    esac
+done
+
+# if errors occured
+if [ -z "$PROG" ]
+then
+        show_help
+        exit 1
+fi
+
+if [ -z "$CONF" ]
+then
+        show_help
+        exit 1
+fi
+
+echo "#"
+echo "# Experiment Configuration"
+echo "#    Program:    $PROG"
+echo "#    Arguments:  $ARGS"
+echo "#    ConfigFile: $CONF"
+echo "#"
+
+# export configuration file
+export MERCURY_CONFIG=$CONF
+
+# run AdviceManager: for now assume only one instance
+echo "# Start AdviceManager ..."
+AdviceManager &
+
+# get AdviceManager process pid
+AM=$(ps -e | grep AdviceManager | awk '{print $1}')
+echo "# AdviceManager PID: $AM."
+
+# if needed claen page cache
+if [ "$DROP" -eq "1" ]
+then
+        # check if user has the right permission
+        if [ "$UID" -ne "0" ]
+        then
+                echo "# -d requires sudo users. Re-run with sudo."
+                kill $AM
+                echo "# PID: $AM, killed."
+                echo "#"
+                exit 1
+        fi
+
+        echo "# Freeing page cache ..."
+        echo 1 > /proc/sys/vm/drop_caches
+fi
+
+# launch application
+echo "# Start $PROG ..."
+LD_PRELOAD=libAIO.so $PROG $ARGS
+
+# stop AdviceManager process
+kill $AM
+echo "# $AM killed"
+echo "#"
