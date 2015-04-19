@@ -75,17 +75,17 @@ Running Applications
 --------------------
 The AdviceManager & I/O libs will search for the configuration file looking in the environmental variable "MERCURY_CONFIG", thus make sure you have exported it by typing:
 
-                          "export MERCURY_CONFIG=path_to_config_file"
+     "export MERCURY_CONFIG=path_to_config_file"
 
 After you have started the AdviceManager you can start the target application. If you don't want to recompile your application (e.g. you don't have the source code for it) use the "LD_PRELOAD" variable to interpose the AIO library between your application and LibC by typing:
 
-                                 "export LD_PRELOAD=libAIO.so"   
+     "export LD_PRELOAD=libAIO.so"   
 
 Stop Mercury
 ------------
 The AdviceManager can be stopped using, e.g., socat by typing the following command:
 
-                   "socat -u EXEC:"echo \"Shutdown\"" UNIX-SENDTO:/tmp/channel"
+      "socat -u EXEC:"echo \"Shutdown\"" UNIX-SENDTO:/tmp/channel"
 
 Lustre POSIX_FADV_WILLNEED Support
 ----------------------------------
