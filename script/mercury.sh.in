@@ -9,6 +9,7 @@ options:
   -p PROG  program to run
   -a ARGS  string with arguments to be passed to program
   -c CONF  configuration file to be used by mercury
+  -i IMPL  mercury implementation, AIO or SAIO
   -d       drop caches before running PROG
 EOF
 }
@@ -17,8 +18,9 @@ EOF
 DROP=0
 PROG=
 CONF=
+IMPL=
 OPTIND=1
-while getopts "hp:a:c:d" opt; do
+while getopts "hp:a:c:i:d" opt; do
     case "$opt" in
         h)  show_help
             exit 0
@@ -28,6 +30,8 @@ while getopts "hp:a:c:d" opt; do
         a)  ARGS=$OPTARG
             ;;
         c)  CONF=$OPTARG
+            ;;
+        i)  IMPL=$OPTARG
             ;;
         d)  DROP=1
             ;;
@@ -40,14 +44,24 @@ done
 # if errors occured
 if [ -z "$PROG" ]
 then
+        echo "Target program not defined"
         show_help
         exit 1
 fi
 
 if [ -z "$CONF" ]
 then
+        echo "Configuration file not defined"
         show_help
         exit 1
+fi
+
+if [ "$IMPL" -ne "AIO" ]; then
+        if [ "$IMPL" -ne "SAIO" ]; then
+                echo "Implementation not recognised"
+                show_help
+                exit 1
+        fi
 fi
 
 echo "#"
@@ -55,22 +69,24 @@ echo "# Experiment Configuration"
 echo "#    Program:    $PROG"
 echo "#    Arguments:  $ARGS"
 echo "#    ConfigFile: $CONF"
+echo "#    Version:    $IMPL"
 echo "#"
 
 # export configuration file
 export MERCURY_CONFIG=$CONF
 
-# run AdviceManager: for now assume only one instance
-echo "# Start AdviceManager ..."
-AdviceManager &
+if [ "$IMPL" -eq "AIO" ]; then
+        # run AdviceManager: for now assume only one instance
+        echo "# Start AdviceManager ..."
+        AdviceManager &
 
-# get AdviceManager process pid
-AM=$(ps -e | grep AdviceManager | awk '{print $1}')
-echo "# AdviceManager PID: $AM."
+        # get AdviceManager process pid
+        AM=$(ps -e | grep AdviceManager | awk '{print $1}')
+        echo "# AdviceManager PID: $AM."
+fi
 
 # if needed claen page cache
-if [ "$DROP" -eq "1" ]
-then
+if [ "$DROP" -eq "1" ]; then
         # check if user has the right permission
         if [ "$UID" -ne "0" ]
         then
@@ -87,9 +103,15 @@ fi
 
 # launch application
 echo "# Start $PROG ..."
-LD_PRELOAD=libAIO.so $PROG $ARGS
+if [ "$IMPL" -eq "AIO" ]; then
+        LD_PRELOAD=libAIO.so $PROG $ARGS
+else
+        LD_PRELOAD=libSAIO.so $PROG $ARGS
+fi
 
 # stop AdviceManager process
-kill $AM
-echo "# $AM killed"
-echo "#"
+if [ "$IMPL" -eq "AIO" ]; then
+        kill $AM
+        echo "# $AM killed"
+        echo "#"
+fi
