@@ -2,13 +2,13 @@ Mercury v0.2
 
 Description
 -----------
-Mercury is a transparent guided I/O framework able to feed hints into the I/O stack transparently to the user. Users can use mercury to guide the caching behaviour of the file system, adapting it the to application's needs. For example, an application reading data from a file non-contiguously, that is, reads may be interleaved by gaps (seek) inevitably leading to inefficient utilization of the storage device (HDD), can benefit from Mercury that can prefetch a bigger block of sequential data from the file system into the cache and allow the application to access non-contiguous data from local main memory (this is based on the concept of data sieving). The user can also set POSIX hints (advice) describing the access pattern of the application for different regions of the file (e.g. disabling read-ahead for randomly accessed regions).
+Mercury is a guided I/O framework able to feed hints into the I/O stack transparently to the application. Through Mercury, system administrators or users can guide the caching behaviour of the file system, adapting it the to application's needs. For example, an application reading data from a file non-contiguously, that is, reads may be interleaved by gaps (seek) inevitably leading to inefficient utilization of the storage device (HDD), can benefit from Mercury by prefetching a bigger block of sequential data from the file system into the cache and allow the application to access non-contiguous data from local main memory (this is based on the concept of data sieving). Users can also set POSIX hints (advice) describing the application's access pattern for different regions of the file (e.g. disabling read-ahead for randomly accessed regions).
 
 Requires
 --------
 During the development phase the following libraries and environments were used: libjsoncpp-dev, libpcre++-dev, liblog4cpp5-dev, Linux 2.6 or later, g++-4.4 or later
 
-Installing mercury
+Installing Mercury
 ------------------
 
    * Run "./configure", "make", and "make install".
@@ -24,9 +24,9 @@ Installing mercury
 Mercury Architecture
 ---------------
 
-   * Mercury is composed of three components: the "AdviceManager", the "AIO" library and the "Json configuration file".
+Mercury is composed of three components: the "AdviceManager", the "AIO" library and the "Json configuration file".
 
-   * AssistedIO (AIO): is the Assisting I/O library overloading the POSIX I/O methods. The library has to be linked to the application or alternatively interposed using the dynamic linker "LD_PRELOAD" variable. The AIO library will listen to the I/O requests made by the application and will forward all the open/read/close operations to the AdviceManager (which will assist it in the I/O) through UNIX domain sockets using "sendmsg()".
+   * AssistedIO (AIO): is the Assisting I/O library overloading the POSIX I/O methods. The library has to be linked to the application or alternatively interposed using the dynamic linker "LD_PRELOAD" variable. The AIO library will listen to the I/O requests performed by the application and will forward all the open/read/close operations to the AdviceManager (which will assist it in the I/O) through UNIX domain sockets using "sendmsg()".
 
    * AdviceManager: is an independent process that receives I/O requests info from the AIO library and generates hints for the file system in the form of POSIX advice through "posix_fadvise()" or GPFS hints through "gpfs_fcntl()". The hints interface is selected automatically depending on where the file resides. The hints to be passed to the file system are specified by the user in a separate configuration file that is loaded at the time the AdviceManager and the AIO library are started.
 
@@ -73,7 +73,7 @@ The accessed block in the AdviceManager cache will be handled using a LRU algori
 
 Running Applications
 --------------------
-The AdviceManager & I/O libs will search for the configuration file looking in the environmental variable "MERCURY_CONFIG", thus make sure you have exported it by typing:
+The AdviceManager and the I/O libs will search for the Json configuration file looking in the environmental variable "MERCURY_CONFIG", thus make sure you have exported it by typing:
 
      "export MERCURY_CONFIG=path_to_config_file"
 
@@ -94,7 +94,7 @@ A linux kernel patch is provided to make the LUSTRE distributed file system work
 The provided patch modifies the VFS in the Linux kernel to make 'fadvise64()' call 'aio_read()' operation instead of '__do_page_cache_readahead()'. The 'aio_read()' call is later on intercepted by the Lustre Lite module in the virtual file system and handled as normal read operation, acquiring the locks as appropriate.
 NOTE: at the moment Lustre Lite is not modified and this has effects on the amount of data actually read by 'posix_fadvise()'. In fact Lustre read-ahead is not disabled and thus more data than requested is eventually loaded into the page cache.
 
-Follows a simplified call graph for the read operation in the linux kernel. The picture is divided in four quadrants, according to the type of operation (Page cache or File operations) and the specific implementation (Lustre Lite, Linux Kernel). As it can be seen, 'fadvise64()' has no effect on Lustre read page (ll_readpage). Thus, POSIX_FADV_WILLNEED is discarded by the Kernel. On the other hand, by making 'fadvise64()' call 'aio_read()' will automatically end up invoking 'll_file_read()' and thus 'll_readpage()'.
+Follows a simplified call graph for the read operation in the linux kernel. The picture is divided into four quadrants, according to the type of operation (Page cache or File operations) and the specific implementation (Lustre Lite, Linux Kernel). As it can be seen, 'fadvise64()' has no effect on Lustre read page (ll_readpage). Thus, POSIX_FADV_WILLNEED is discarded by the Kernel. On the other hand, by making 'fadvise64()' call 'aio_read()' will automatically end up invoking 'll_file_read()' and thus 'll_readpage()'.
 
      F                                                   |
      i                                                   |        ll_file_read()
