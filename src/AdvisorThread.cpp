@@ -33,29 +33,11 @@ mercury::AdvisorThread::AdvisorThread( int fd, std::string pathname ) :
         pathname_( pathname ),
         blockCache_( mercury::BlockCache::getInstance( pathname ) )
 {
-        thread_ = ( pthread_t * )malloc( sizeof( pthread_t ) );
-        pthread_attr_init( &attr_ );
-        pthread_attr_setdetachstate( &attr_, PTHREAD_CREATE_DETACHED );
-        queue_ = new mercury::AtomicQueue<std::string>( );
-
-        /**
-         * configuration of pathname by mercury::Config::getInstance( )
-         * is done in mercury::BlockCache::getInstance( )
-         */
-
-        /* set fd in block cache */
-        blockCache_.setFileDescriptor( fd );
-
-        /* initialize hint map */
-        hintMap_["Sequential"] = POSIX_FADV_SEQUENTIAL;
-        hintMap_["Random"] = POSIX_FADV_RANDOM;
-        hintMap_["Normal"] = POSIX_FADV_NORMAL;
-        hintMap_["WillNeed"] = POSIX_FADV_WILLNEED;
-        hintMap_["DontNeed"] = POSIX_FADV_DONTNEED;
-        hintMap_["Nop"] = NOP;
-
-        /* launch generalized hint routine */
-        pthread_create( thread_, &attr_, run_generalized_hint_routine, this );
+	pthread_attr_t attr;
+	pthread_attr_init( &attr );
+	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
+	mercury::AdvisorThread( fd, pathname, attr );
+	pthread_attr_destroy( &attr );	
 }
 
 /**

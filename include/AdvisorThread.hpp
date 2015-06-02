@@ -24,7 +24,6 @@
 #include "AtomicQueue.hpp"
 #include "Config.hpp"
 #include "BlockCache.hpp"
-#include "GenericThread.hpp"
 
 #define GPFS_SUPER_MAGIC 0x47504653
 #define NOP 100
