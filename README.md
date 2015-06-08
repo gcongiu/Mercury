@@ -2,7 +2,7 @@ Mercury v0.2
 
 Description
 -----------
-Mercury is a guided I/O framework able to feed hints into the I/O stack transparently to the application. Through Mercury, system administrators or users can guide the caching behaviour of the file system, adapting it the to application's needs. For example, an application reading data from a file non-contiguously, that is, reads may be interleaved by gaps (seek) inevitably leading to inefficient utilization of the storage device (HDD), can benefit from Mercury by prefetching a bigger block of sequential data from the file system into the cache and allow the application to access non-contiguous data from local main memory (this is based on the concept of data sieving). Users can also set POSIX hints (advice) describing the application's access pattern for different regions of the file (e.g. disabling read-ahead for randomly accessed regions).
+Mercury is a guided I/O framework able to feed hints into the I/O stack transparently to the application. Through Mercury, system administrators or users can guide the caching behaviour of the file system, adapting it the to application's needs. For example, an application reading data from a file non-contiguously, that is, reads may be interleaved by gaps (seek) inevitably leading to inefficient utilization of the storage device (HDD), can benefit from Mercury by prefetching a bigger block of sequential data from the file system into the cache and access non-contiguous data from local main memory (this is based on the concept of data sieving). Users can also set POSIX hints (advice) describing the application's access pattern for different regions of the file (e.g. disabling read-ahead for randomly accessed regions).
 
 Requires
 --------
