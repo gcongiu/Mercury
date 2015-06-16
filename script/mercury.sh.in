@@ -56,8 +56,10 @@ then
         exit 1
 fi
 
-if [ "$IMPL" -ne "AIO" ]; then
-        if [ "$IMPL" -ne "SAIO" ]; then
+if [ "$IMPL" != "AIO" ]
+then
+        if [ "$IMPL" != "SAIO" ]
+        then
                 echo "Implementation not recognised"
                 show_help
                 exit 1
@@ -75,7 +77,7 @@ echo "#"
 # export configuration file
 export MERCURY_CONFIG=$CONF
 
-if [ "$IMPL" -eq "AIO" ]; then
+if [ "$IMPL" == "AIO" ]; then
         # run AdviceManager: for now assume only one instance
         echo "# Start AdviceManager ..."
         AdviceManager &
@@ -103,14 +105,14 @@ fi
 
 # launch application
 echo "# Start $PROG ..."
-if [ "$IMPL" -eq "AIO" ]; then
+if [ "$IMPL" == "AIO" ]; then
         LD_PRELOAD=libAIO.so $PROG $ARGS
 else
         LD_PRELOAD=libSAIO.so $PROG $ARGS
 fi
 
 # stop AdviceManager process
-if [ "$IMPL" -eq "AIO" ]; then
+if [ "$IMPL" == "AIO" ]; then
         kill $AM
         echo "# $AM killed"
         echo "#"

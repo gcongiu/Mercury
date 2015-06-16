@@ -288,6 +288,7 @@ void mercury::Config::getWillneedInfo( offset_t offset, offset_t len, std::vecto
                                 willneed.push_back( *it );
                                 it++;
                         }
+                        break;
                 }
         }
 }
