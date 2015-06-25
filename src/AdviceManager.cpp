@@ -241,7 +241,7 @@ int main( int argc, char **argv )
         if( std::getenv( "MERCURY_CONFIG" ) != NULL )
         {
                 mercurylog.info( "Reading config file." );
-                config_file = std::string( std::getenv( "mercury_CONFIG" ) );
+                config_file = std::string( std::getenv( "MERCURY_CONFIG" ) );
         }
         else
         {
