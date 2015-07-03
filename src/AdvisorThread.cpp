@@ -33,11 +33,11 @@ mercury::AdvisorThread::AdvisorThread( int fd, std::string pathname ) :
         pathname_( pathname ),
         blockCache_( mercury::BlockCache::getInstance( pathname ) )
 {
-	pthread_attr_t attr;
-	pthread_attr_init( &attr );
-	pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
-	mercury::AdvisorThread( fd, pathname, attr );
-	pthread_attr_destroy( &attr );	
+        pthread_attr_t attr;
+        pthread_attr_init( &attr );
+        pthread_attr_setdetachstate( &attr, PTHREAD_CREATE_DETACHED );
+        mercury::AdvisorThread( fd, pathname, attr );
+        pthread_attr_destroy( &attr );
 }
 
 /**
@@ -214,6 +214,14 @@ void mercury::AdvisorThread::generalized_hint_routine( )
                         }
                         case POSIX_FADV_WILLNEED:
                         {
+                                /* Using custom prefetch disables kernel read-ahead */
+                                if( unlikely( posix_fadvise_state != POSIX_FADV_RANDOM ) )
+                                {
+                                        posix_fadvise( fd, 0, 0, POSIX_FADV_RANDOM );
+                                        posix_fadvise_state = POSIX_FADV_RANDOM;
+                                }
+
+                                /* prefetch data using the appropriate implementation */
                                 ret = blockCache.getBlock( offset, length );
                                 if( ret == -1 )
                                 {
