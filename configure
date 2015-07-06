@@ -16127,6 +16127,8 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 # Configure mercury.sh
 ac_config_files="$ac_config_files script/mercury.sh"
 
+ac_config_files="$ac_config_files script/blkstat.py"
+
 
 # Checks for GPFS header file.
 
@@ -17625,6 +17627,7 @@ do
     "depfiles") CONFIG_COMMANDS="$CONFIG_COMMANDS depfiles" ;;
     "libtool") CONFIG_COMMANDS="$CONFIG_COMMANDS libtool" ;;
     "script/mercury.sh") CONFIG_FILES="$CONFIG_FILES script/mercury.sh" ;;
+    "script/blkstat.py") CONFIG_FILES="$CONFIG_FILES script/blkstat.py" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
     "test/Makefile") CONFIG_FILES="$CONFIG_FILES test/Makefile" ;;
@@ -18948,6 +18951,7 @@ _LT_EOF
 
  ;;
     "script/mercury.sh":F) chmod +x script/mercury.sh ;;
+    "script/blkstat.py":F) chmod +x script/blkstat.py ;;
 
   esac
 done # for ac_tag

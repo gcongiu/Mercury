@@ -19,6 +19,7 @@ AC_PROG_LIBTOOL
 
 # Configure mercury.sh
 AC_CONFIG_FILES([script/mercury.sh], [chmod +x script/mercury.sh])
+AC_CONFIG_FILES([script/blkstat.py], [chmod +x script/blkstat.py])
 
 # Checks for GPFS header file.
 AC_CHECK_HEADERS([gpfs_fcntl.h], 

@@ -1,4 +1,8 @@
 #!/bin/bash
+#########################################################
+# Author: Giuseppe Congiu <giuseppe.congiu@seagate.com> #
+# Name:   mercury.sh                                    #
+#########################################################
 
 show_help() {
 cat << EOF
