@@ -1,0 +1,86 @@
+#!/usr/bin/python
+#########################################################
+# Author: Giuseppe Congiu <giuseppe.congiu@seagate.com> #
+# Name:   blkstat.py                                    #
+#########################################################
+import re
+from optparse import OptionParser
+
+# input file line regular expression -> <off,len> pairs
+regex_line = re.compile('([0-9]+),([0-9]+)')
+
+# compute file block histogram
+def histogram(filename, blksize):
+    hist = {}
+    for line in filename:
+        res = re.search(regex_line, line)
+        if res is not None:
+            offset = long(res.group(1))
+            length = long(res.group(2))
+            blkoff = offset/blksize
+            blklen = (length + blksize - 1)/blksize
+            for b in range(blkoff, blkoff + blklen):
+                if b not in hist:
+                    hist[b] = {}
+                    hist[b]['hit'] = 1
+                    hist[b]['size'] =\
+                        min((blkoff + 1) * blksize, offset + length) -\
+                        max(blkoff * blksize, offset)
+                else:
+                    hist[b]['hit'] += 1
+                    hist[b]['size'] +=\
+                        min((blkoff + 1) * blksize, offset + length) -\
+                        max(blkoff*blksize, offset)
+                    hist[b]['size'] = min(hist[b]['size'], blksize)
+    return hist
+
+# compute block access list
+def block_access_list(filename, blksize):
+    blk = []
+    for line in filename:
+        res = re.search(regex_line, line)
+        if res is not None:
+            offset = long(res.group(1))
+            length = long(res.group(2))
+            blkoff = offset/blksize
+            blklen = (length + blksize - 1)/blksize
+            for b in range(blkoff, blkoff + blklen):
+                blk.append(b)
+    return blk
+
+if __name__ == "__main__":
+
+    # check the command line input
+    parser = OptionParser()
+    parser.add_option("-i", "--input", dest="infile",
+                      help="input file of <off,len> pairs", metavar="FILE")
+    parser.add_option("-b", "--block", dest="blksize",
+                      help="block size to be used to compute block statistics")
+
+    (options, args) = parser.parse_args()
+
+    # file names
+    infile = open(options.infile, "r")
+    histfile = open(options.infile+'.%s.hist'%(options.blksize), "w")
+    blkfile = open(options.infile+'.%s.blk'%(options.blksize), "w")
+
+    # get block size
+    blksize = long(options.blksize)
+
+    # compute the histogram
+    hist = histogram(infile, blksize)
+
+    # reposition to beginning of file
+    infile.seek(0, 0)
+
+    # compute block sequence
+    blk  = block_access_list(infile, blksize)
+
+    for i in hist:
+        histfile.write(str(i)+','+str(hist[i]['hit'])+','+str(hist[i]['size'])+'\n')
+
+    for i in blk:
+        blkfile.write(str(i)+'\n')
+
+    histfile.close()
+    blkfile.close()
