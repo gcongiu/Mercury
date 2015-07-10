@@ -45,7 +45,12 @@ def block_access_list(filename, blksize):
             blkoff = offset/blksize
             blklen = (length + blksize - 1)/blksize
             for b in range(blkoff, blkoff + blklen):
-                blk.append(b)
+                item = []
+                if len(blk) == 0:
+                    item = [b, 1, 0]
+                else:
+                    item = [b, 1, b-blk[len(blk)-1][0]]
+                blk.append(item)
     return blk
 
 if __name__ == "__main__":
@@ -74,13 +79,13 @@ if __name__ == "__main__":
     infile.seek(0, 0)
 
     # compute block sequence
-    blk  = block_access_list(infile, blksize)
+    blk = block_access_list(infile, blksize)
 
     for i in hist:
         histfile.write(str(i)+','+str(hist[i]['hit'])+','+str(hist[i]['size'])+'\n')
 
     for i in blk:
-        blkfile.write(str(i)+'\n')
+        blkfile.write(str(i[0])+','+str(i[1])+','+str(i[2])+'\n')
 
     histfile.close()
     blkfile.close()
