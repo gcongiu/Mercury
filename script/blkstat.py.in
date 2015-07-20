@@ -89,3 +89,4 @@ if __name__ == "__main__":
 
     histfile.close()
     blkfile.close()
+    infile.close()

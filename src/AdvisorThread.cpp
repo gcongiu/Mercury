@@ -187,7 +187,7 @@ void mercury::AdvisorThread::generalized_hint_routine( )
                 {
                         case POSIX_FADV_SEQUENTIAL:
                         {
-                                if( posix_fadvise_state != POSIX_FADV_SEQUENTIAL )
+                                if( unlikely( posix_fadvise_state != POSIX_FADV_SEQUENTIAL ) )
                                 {
                                         posix_fadvise( fd, 0, 0, POSIX_FADV_SEQUENTIAL );
                                         posix_fadvise_state = POSIX_FADV_SEQUENTIAL;
@@ -196,7 +196,7 @@ void mercury::AdvisorThread::generalized_hint_routine( )
                         }
                         case POSIX_FADV_RANDOM:
                         {
-                                if( posix_fadvise_state != POSIX_FADV_RANDOM )
+                                if( unlikely( posix_fadvise_state != POSIX_FADV_RANDOM ) )
                                 {
                                         posix_fadvise( fd, 0, 0, POSIX_FADV_RANDOM );
                                         posix_fadvise_state = POSIX_FADV_RANDOM;
@@ -205,7 +205,7 @@ void mercury::AdvisorThread::generalized_hint_routine( )
                         }
                         case POSIX_FADV_NORMAL:
                         {
-                                if( posix_fadvise_state != POSIX_FADV_NORMAL )
+                                if( unlikely( posix_fadvise_state != POSIX_FADV_NORMAL ) )
                                 {
                                         posix_fadvise( fd, 0, 0, POSIX_FADV_NORMAL );
                                         posix_fadvise_state = POSIX_FADV_NORMAL;
