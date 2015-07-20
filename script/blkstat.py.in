@@ -87,6 +87,7 @@ if __name__ == "__main__":
     for i in blk:
         blkfile.write(str(i[0])+','+str(i[1])+','+str(i[2])+'\n')
 
+    infile.close()
     histfile.close()
     blkfile.close()
     infile.close()
