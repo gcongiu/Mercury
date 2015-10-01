@@ -90,4 +90,3 @@ if __name__ == "__main__":
     infile.close()
     histfile.close()
     blkfile.close()
-    infile.close()

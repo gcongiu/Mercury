@@ -52,16 +52,11 @@ mercury::AdvisorThread::AdvisorThread( int fd, std::string pathname ) :
 mercury::AdvisorThread::AdvisorThread( int fd, std::string pathname, pthread_attr_t attr ) :
         fd_( fd ),
         pathname_( pathname ),
-        blockCache_( mercury::BlockCache::getInstance( pathname ) ),
+        blockCache_( mercury::BlockCache::getInstance( pathname ) ), /* invokes Config::getInstance() */
         attr_( attr )
 {
         thread_ = ( pthread_t * )malloc( sizeof( pthread_t ) );
         queue_ = new mercury::AtomicQueue<std::string>( );
-
-        /**
-         * configuration of pathname by mercury::Config::getInstance( )
-         * is done in mercury::BlockCache::getInstance( )
-         */
 
         /* set fd in block cache */
         blockCache_.setFileDescriptor( fd );
