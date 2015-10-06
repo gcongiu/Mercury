@@ -115,7 +115,6 @@ static std::list<std::string> * paths_ = NULL; //valid paths
 
 // timers
 static struct timeval start_, end_, iostart_, ioend_;
-static double iotime_;
 
 // config file
 static char *config_file = NULL;
@@ -179,8 +178,6 @@ static void __attribute__(( constructor( 65535 ) )) SAIO_init( void )
                 exit( EXIT_FAILURE );
         }
 
-        iotime_ = 0;
-
         std::cerr << "# monitored paths: ";
         std::list<std::string>::iterator it = paths_->begin( );
         for( ; it != paths_->end( ); it++ )
@@ -202,11 +199,8 @@ static void __attribute__(( destructor( 65535 ) )) SAIO_fini( void )
         std::cerr << "# SAIO_fini()" << std::endl;
 
         /* print iotime and total runtime to standard output */
-        std::cout << "iotime,total" << std::endl;
-        std::cout << "" << iotime_
-                  << "," << (double)((end_.tv_sec - start_.tv_sec) +
-                                     (end_.tv_usec - start_.tv_usec) / 1000000.0)
-                  << std::endl;
+        std::cout << "elapsed: " << (double)((end_.tv_sec - start_.tv_sec) +
+                                             (end_.tv_usec - start_.tv_usec) / 1000000.0) << std::endl;
 
         /* reset the to original interface */
         _open_2  = ( int     (*)( const char*, int ) )            dlsym( RTLD_NEXT, "__open_2" );
@@ -247,8 +241,12 @@ int __open_2( const char *pathname, int flags )
         gettimeofday( &iostart_, NULL );
         ret = _open_2( pathname, flags );
         gettimeofday( &ioend_, NULL );
-        iotime_ += (double)((ioend_.tv_sec - iostart_.tv_sec) +
-                            (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0);
+        log4cpp::Category::getInstance( "mercury" ).info(
+                "%f OPEN(%s) = %d ",
+                (double)((ioend_.tv_sec - iostart_.tv_sec) +
+                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
+                pathname,
+                ret );
 
         return ret;
 }
@@ -299,8 +297,12 @@ int open( const char *pathname, int flags, ... )
         gettimeofday( &iostart_, NULL );
         ret = _open( pathname, flags );
         gettimeofday( &ioend_, NULL );
-        iotime_ += (double)((ioend_.tv_sec - iostart_.tv_sec) +
-                            (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0);
+        log4cpp::Category::getInstance( "mercury" ).info(
+                "%f OPEN(%s) = %d",
+                (double)((ioend_.tv_sec - iostart_.tv_sec) +
+                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
+                pathname,
+                ret );
 
         return ret;
 }
@@ -357,8 +359,12 @@ int open64( const char *pathname, int flags, ... )
         gettimeofday( &iostart_, NULL );
         ret = _open64( pathname, flags, ap );
         gettimeofday( &ioend_, NULL );
-        iotime_ += (double)((ioend_.tv_sec - iostart_.tv_sec) +
-                            (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0);
+        log4cpp::Category::getInstance( "mercury" ).info(
+                "%f OPEN(%s) = %d",
+                (double)((ioend_.tv_sec - iostart_.tv_sec) +
+                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
+                pathname,
+                ret );
 
         return ret;
 }
@@ -413,8 +419,12 @@ FILE* fopen( const char *pathname, const char *mode )
         gettimeofday( &iostart_, NULL );
         fp = _fopen( pathname, mode );
         gettimeofday( &ioend_, NULL );
-        iotime_ += (double)((ioend_.tv_sec - iostart_.tv_sec) +
-                            (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0);
+        log4cpp::Category::getInstance( "mercury" ).info(
+                "%f OPEN(%s) = %d",
+                (double)((ioend_.tv_sec - iostart_.tv_sec) +
+                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
+                pathname,
+                fileno( fp ) );
 
         return fp;
 }
@@ -466,8 +476,12 @@ FILE* fopen64( const char *pathname, const char *mode )
         gettimeofday( &iostart_, NULL );
         fp = _fopen64( pathname, mode );
         gettimeofday( &ioend_, NULL );
-        iotime_ += (double)((ioend_.tv_sec - iostart_.tv_sec) +
-                            (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0);
+        log4cpp::Category::getInstance( "mercury" ).info(
+                "%f OPEN(%s) = %d",
+                (double)((ioend_.tv_sec - iostart_.tv_sec) +
+                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
+                pathname,
+                fileno( fp ) );
 
         return fp;
 }
@@ -519,8 +533,11 @@ int close( int fd )
         gettimeofday( &iostart_, NULL );
         ret = _close( fd );
         gettimeofday( &ioend_, NULL );
-        iotime_ += (double)((ioend_.tv_sec - iostart_.tv_sec) +
-                            (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0);
+        log4cpp::Category::getInstance( "mercury" ).info(
+                "%f CLOSE(%d)",
+                (double)((ioend_.tv_sec - iostart_.tv_sec) +
+                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
+                fd );
 
         return ret;
 }
@@ -550,8 +567,11 @@ int fclose( FILE *fp )
         gettimeofday( &iostart_, NULL );
         ret = _fclose( fp );
         gettimeofday( &ioend_, NULL );
-        iotime_ += (double)((ioend_.tv_sec - iostart_.tv_sec) +
-                            (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0);
+        log4cpp::Category::getInstance( "mercury" ).info(
+                "%f CLOSE(%d)",
+                (double)((ioend_.tv_sec - iostart_.tv_sec) +
+                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
+                fileno( fp ) );
 
         return ret;
 }
@@ -582,8 +602,12 @@ ssize_t read( int fd, void *buf, size_t count )
         gettimeofday( &iostart_, NULL );
         ret = _read( fd, buf, count );
         gettimeofday( &ioend_, NULL );
-        iotime_ += (double)((ioend_.tv_sec - iostart_.tv_sec) +
-                            (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0);
+        log4cpp::Category::getInstance( "mercury" ).info(
+                "%f READ(%d) = %lu",
+                (double)((ioend_.tv_sec - iostart_.tv_sec) +
+                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
+                fd,
+                ret );
 
         return ret;
 }
@@ -617,8 +641,12 @@ ssize_t pread( int fd, void *buf, size_t count, off_t offset )
         gettimeofday( &iostart_, NULL );
         ret = _pread( fd, buf, count, offset );
         gettimeofday( &ioend_, NULL );
-        iotime_ += (double)((ioend_.tv_sec - iostart_.tv_sec) +
-                            (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0);
+        log4cpp::Category::getInstance( "mercury" ).info(
+                "%f READ(%d) = %lu",
+                (double)((ioend_.tv_sec - iostart_.tv_sec) +
+                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
+                fd,
+                ret );
 
         return ret;
 }
@@ -651,8 +679,12 @@ size_t fread( void *ptr, size_t size, size_t nmemb, FILE *stream )
         gettimeofday( &iostart_, NULL );
         ret = _fread( ptr, size, nmemb, stream );
         gettimeofday( &ioend_, NULL );
-        iotime_ += (double)((ioend_.tv_sec - iostart_.tv_sec) +
-                            (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0);
+        log4cpp::Category::getInstance( "mercury" ).info(
+                "%f READ(%d) = %li",
+                (double)((ioend_.tv_sec - iostart_.tv_sec) +
+                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
+                fileno( stream ),
+                ret );
 
         return ret;
 }

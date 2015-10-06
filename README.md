@@ -127,6 +127,6 @@ Follows a simplified call graph for the read operation in the linux kernel. The 
      t       ^       |                |               |  |              v
      i       |       |                |               +--------- ll_readahead()
      o       |       |                v                  |
-     n       +-------+--__do_page_cache_readahead()        |
+     n       +-------+--__do_page_cache_readahead()      |
      s                                                   |
                                  Linux Kernel            |         Lustre Lite 
