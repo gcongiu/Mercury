@@ -21,7 +21,7 @@ AdviceManager_SOURCES = AdviceManager.cpp \
 lib_LTLIBRARIES = libAIO.la libSAIO.la
 
 # additional libs
-libAIO_la_LIBADD = -ljsoncpp -lm -lrt -ldl
+libAIO_la_LIBADD = -ljsoncpp -lm -lrt -ldl -llog4cpp
 libAIO_la_LDFLAGS = -version-info 0:0:0
 
 # c++ flags

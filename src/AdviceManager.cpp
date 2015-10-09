@@ -235,30 +235,28 @@ int main( int argc, char **argv )
         // init mercury
         mercury::AdviceManager * manager;
         mercury::RegisterLog * reg;
-        std::string config_file;
+        char *config_file = NULL;
 
         /* read the configuration file pathname */
-        if( std::getenv( "MERCURY_CONFIG" ) != NULL )
+        if( (config_file = std::getenv( "MERCURY_CONFIG" )) != NULL )
         {
                 mercurylog.info( "Reading config file." );
-                config_file = std::string( std::getenv( "MERCURY_CONFIG" ) );
         }
         else
         {
                 mercurylog.error( "No config file available. Type: 'export MERCURY_CONFIG=\"path_to_config\"'." );
-                std::cerr << "## Exited with error, see mercury.log for more info." << std::endl;
-                exit( EXIT_FAILURE );
+                std::cerr << "## continuing without hints support, see memory.log for more details." << std::endl;
         }
 
         /* read the configuration file */
-        if( !mercury::Config::init( config_file ) )
+        if( config_file && !mercury::Config::init( config_file ) )
         {
-                mercurylog.error( "Error while parsing the config file %s!", config_file.c_str( ) );
+                mercurylog.error( "Error while parsing the config file %s!", config_file );
                 std::cerr << "## Exited with error, see mercury.log for more info." << std::endl;
                 exit( EXIT_FAILURE );
         }
 
-        mercurylog.info( "Config file: %s, read successfully.", config_file.c_str( ) );
+        mercurylog.info( "Config file: %s, read successfully.", config_file );
 
         /* initialize the registration class */
         reg = new mercury::RegisterLog( );

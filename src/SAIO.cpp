@@ -117,31 +117,28 @@ static std::list<std::string> * paths_ = NULL; //valid paths
 static struct timeval start_, end_, iostart_, ioend_;
 
 // config file
-static char *config_file = NULL;
+static char *config_file_ = NULL;
+
+// global initialization status
+static bool initialized_ = 0;
 
 // Stand Alone I/O initialization (should be last after log4cpp and Config.o)
-static void __attribute__(( constructor( 65535 ) )) SAIO_init( void )
+void __attribute__(( constructor( 65535 ) )) SAIO_Init( void )
 {
+        /* already initialized by the main */
+        if( initialized_ == true )
+                return;
+
         /* start measuring the time */
         gettimeofday( &start_, NULL );
 
-        std::cerr << "# SAIO_init()" << std::endl;
+        std::cerr << "# SAIO_Init()" << std::endl;
 
         /* initialize register_ */
         register_ = new mercury::RegisterLog( );
 
         /* initialize paths_ map */
         paths_ = new std::list<std::string>( );
-
-        // read the json configuration file for the rules
-        config_file = getenv( "MERCURY_CONFIG" );
-
-        if( config_file == NULL )
-        {
-                std::cerr << "## ERROR: No configuration file available" << std::endl;
-                std::cerr << "## type: export MERCURY_CONFIG=\"config.json\"" << std::endl;
-                exit( EXIT_FAILURE );
-        }
 
         // redirect calls from within the interposed lib to original functions in libc
         ___open_2 = ( int     (*)( const char*, int ) )            dlsym( RTLD_NEXT, "__open_2" );
@@ -168,12 +165,22 @@ static void __attribute__(( constructor( 65535 ) )) SAIO_init( void )
         _fread    = &myfread;
         //_pread64 = &mypread64;
 
+        // read the json configuration file for the rules
+        config_file_ = getenv( "MERCURY_CONFIG" );
+
+        if( config_file_ == NULL )
+        {
+                std::cerr << "## WARNING: No configuration file available" << std::endl;
+                std::cerr << "## type: export MERCURY_CONFIG=\"config.json\"" << std::endl;
+                std::cerr << "## continuing without hints support ..." << std::endl;
+        }
+
         // Configure Config data object
-        if( !mercury::Config::init( std::string( config_file ) ) )
+        if( config_file_ && !mercury::Config::init( std::string( config_file_ ) ) )
         {
                 exit( EXIT_FAILURE );
         }
-        if( !mercury::Config::getAllPaths( paths_ ) )
+        if( config_file_ && !mercury::Config::getAllPaths( paths_ ) )
         {
                 exit( EXIT_FAILURE );
         }
@@ -188,15 +195,21 @@ static void __attribute__(( constructor( 65535 ) )) SAIO_init( void )
         std::string initFileName = "log4cpp.properties";
         log4cpp::PropertyConfigurator::configure( initFileName );
         log4cpp::Category::getInstance( "mercury" );
+
+        initialized_ = true;
 }
 
 /* this destructor has to be invoked first (before libc otherwise free() won't be found) */
-static void __attribute__(( destructor( 65535 ) )) SAIO_fini( void )
+void __attribute__(( destructor( 65535 ) )) SAIO_Finalize( void )
 {
+        /* already finalized by main */
+        if( initialized_ == false )
+                return;
+
         /* stop the timer */
         gettimeofday( &end_, NULL );
 
-        std::cerr << "# SAIO_fini()" << std::endl;
+        std::cerr << "# SAIO_Finalize()" << std::endl;
 
         /* print iotime and total runtime to standard output */
         std::cout << "elapsed: " << (double)((end_.tv_sec - start_.tv_sec) +
@@ -220,8 +233,16 @@ static void __attribute__(( destructor( 65535 ) )) SAIO_fini( void )
         delete paths_;
 
         /* fini log4cpp and config */
-        mercury::Config::shutdown( );
+        if( config_file_ )
+        {
+                mercury::Config::shutdown( );
+                free( config_file_ );
+        }
         log4cpp::Category::shutdown( );
+
+        /* fini flag */
+        initialized_ = false;
+
 }
 
 /** ==============================================================

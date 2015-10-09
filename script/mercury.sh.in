@@ -57,7 +57,6 @@ if [ -z "$CONF" ]
 then
         echo "Configuration file not defined"
         show_help
-        exit 1
 fi
 
 if [ "$IMPL" != "AIO" ]
@@ -79,7 +78,10 @@ echo "#    Version:    $IMPL"
 echo "#"
 
 # export configuration file
-export MERCURY_CONFIG=$CONF
+if [ -n "$CONF" ]
+then
+        export MERCURY_CONFIG=$CONF
+fi
 
 if [ "$IMPL" == "AIO" ]; then
         # run AdviceManager: for now assume only one instance

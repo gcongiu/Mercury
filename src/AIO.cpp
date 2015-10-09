@@ -120,16 +120,17 @@ static struct timeval start_, end_, iostart_, ioend_;
 __thread struct msghdr msg_ = {0};
 static struct sockaddr_un addr_;
 static int sockfd_;
+static char *config_file_ = NULL;
 
 static pthread_mutex_t mutex_ = PTHREAD_MUTEX_INITIALIZER;
 
 // Assisted I/O initialization
-static void __attribute__(( constructor( 65535 ) )) AIO_init( void )
+void __attribute__(( constructor( 65535 ) )) AIO_Init( void )
 {
         /* start measuring the time */
         gettimeofday( &start_, NULL );
 
-        std::cerr << "# AIO_init()" << std::endl;
+        std::cerr << "# AIO_Init()" << std::endl;
 
         /* init system socket for interprocess communication */
         /* Address Family type: local unix socket            */
@@ -160,21 +161,21 @@ static void __attribute__(( constructor( 65535 ) )) AIO_init( void )
         paths_ = new std::list<std::string>( );
 
         // read the json configuration file for the rules
-        char *config_file = getenv( "MERCURY_CONFIG" );
+        config_file_ = getenv( "MERCURY_CONFIG" );
 
-        if( config_file == NULL )
+        if( config_file_ == NULL )
         {
                 std::cerr << "## ERROR: No configuration file available" << std::endl;
                 std::cerr << "## type: 'export MERCURY_CONFIG=\"config.json\"'" << std::endl;
-                exit( EXIT_FAILURE );
+                std::cerr << "## continuing without hints support ..." << std::endl;
         }
 
         // Configure Config data object
-        if( !mercury::Config::init( std::string( config_file ) ) )
+        if( config_file_ && !mercury::Config::init( std::string( config_file_ ) ) )
         {
                 exit( EXIT_FAILURE );
         }
-        if( !mercury::Config::getAllPaths( paths_ ) )
+        if( config_file_ && !mercury::Config::getAllPaths( paths_ ) )
         {
                 exit( EXIT_FAILURE );
         }
@@ -209,14 +210,19 @@ static void __attribute__(( constructor( 65535 ) )) AIO_init( void )
         _pread    = &mypread;
         _fread    = &myfread;
         //_pread64 = &mypread64;
+
+        /* initialize log4cpp */
+        std::string initFileName = "log4cpp.properties";
+        log4cpp::PropertyConfigurator::configure( initFileName );
+        log4cpp::Category::getInstance( "mercury" );
 }
 
-static void __attribute__(( destructor( 65535 ) )) AIO_fini( void )
+void __attribute__(( destructor( 65535 ) )) AIO_Finalize( void )
 {
         /* stop the timer */
         gettimeofday( &end_, NULL );
 
-        std::cerr << "# AIO_fini()" << std::endl;
+        std::cerr << "# AIO_Finalize()" << std::endl;
 
         /* print iotime and total runtime to standard output */
         std::cout << "elapsed: " << (double)((end_.tv_sec - start_.tv_sec) +
@@ -268,6 +274,9 @@ static void __attribute__(( destructor( 65535 ) )) AIO_fini( void )
         delete files_;
         pthread_mutex_unlock( &mutex_ );
         _close( sockfd_ );
+
+        if( config_file_ )
+                free( config_file_ );
 }
 
 /** ==============================================================
