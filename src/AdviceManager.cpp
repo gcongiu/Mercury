@@ -274,6 +274,8 @@ int main( int argc, char **argv )
         log4cpp::Category::shutdown( );
 
         /* free memory */
+        if( config_file )
+                free( config_file );
         delete manager;
         delete reg;
 

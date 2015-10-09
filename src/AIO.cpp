@@ -284,8 +284,6 @@ void __attribute__(( destructor( 65535 ) )) AIO_Finalize( void )
  */
 int __open_2( const char *pathname, int flags )
 {
-        int ret;
-
         /* before the constructor is called _open points to open in libc
          * after the constructor is called _open points to myopen
          * after the destructor is called _open points back to open in libc
@@ -293,17 +291,7 @@ int __open_2( const char *pathname, int flags )
         if( unlikely( _open_2 == NULL ) )
                 _open_2 = (int (*)( const char *, int ))dlsym( RTLD_NEXT, "__open_2" );
 
-        gettimeofday( &iostart_, NULL );
-        ret = _open_2( pathname, flags );
-        gettimeofday( &ioend_, NULL );
-        log4cpp::Category::getInstance( "mercury" ).info(
-                "%f OPEN(%s) = %d ",
-                (double)((ioend_.tv_sec - iostart_.tv_sec) +
-                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
-                pathname,
-                ret );
-
-        return ret;
+        return _open_2( pathname, flags );
 }
 
 int myopen_2( const char *pathname, int flags )
@@ -313,6 +301,7 @@ int myopen_2( const char *pathname, int flags )
         std::string path( pathname );
         std::string base( basedir );
 
+        gettimeofday( &iostart_, NULL );
         int fd = ___open_2( pathname, flags );
 
         if( fd == -1 )
@@ -365,13 +354,20 @@ int myopen_2( const char *pathname, int flags )
                 }
                 pthread_mutex_unlock( &mutex_ );
         }
+        gettimeofday( &ioend_, NULL );
+        log4cpp::Category::getInstance( "mercury" ).info(
+                "%f OPEN(%s) = %d ",
+                (double)((ioend_.tv_sec - iostart_.tv_sec) +
+                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
+                pathname,
+                fd );
+
         free( filename );
         return fd;
 }
 
 int open( const char *pathname, int flags, ... )
 {
-        int ret;
         va_list ap;
         va_start( ap, flags );
         va_end( ap );
@@ -382,11 +378,7 @@ int open( const char *pathname, int flags, ... )
         if( unlikely( _open == NULL ) )
                 _open = (int (*)( const char *, int, ... ))dlsym( RTLD_NEXT, "open" );
 
-        gettimeofday( &iostart_, NULL );
-        ret = _open( pathname, flags, ap );
-        gettimeofday( &ioend_, NULL );
-
-        return ret;
+        return _open( pathname, flags, ap );
 }
 
 int myopen( const char *pathname, int flags, ... )
@@ -399,6 +391,8 @@ int myopen( const char *pathname, int flags, ... )
         va_list ap;
         va_start( ap, flags );
         va_end( ap );
+
+        gettimeofday( &iostart_, NULL );
         int fd = __open( pathname, flags, ap );
 
         if( fd == -1 )
@@ -451,6 +445,14 @@ int myopen( const char *pathname, int flags, ... )
                 }
                 pthread_mutex_unlock( &mutex_ );
         }
+        gettimeofday( &ioend_, NULL );
+        log4cpp::Category::getInstance( "mercury" ).info(
+                "%f OPEN(%s) = %d ",
+                (double)((ioend_.tv_sec - iostart_.tv_sec) +
+                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
+                pathname,
+                fd );
+
         free( filename );
         return fd;
 }
@@ -460,7 +462,6 @@ int myopen( const char *pathname, int flags, ... )
  */
 int open64( const char *pathname, int flags, ... )
 {
-        int ret;
         va_list ap;
         va_start( ap, flags );
         va_end( ap );
@@ -471,17 +472,7 @@ int open64( const char *pathname, int flags, ... )
         if( unlikely( _open64 == NULL ) )
                 _open64 = (int (*)( const char *, int, ... ))dlsym( RTLD_NEXT, "open" );
 
-        gettimeofday( &iostart_, NULL );
-        ret = _open64( pathname, flags, ap );
-        gettimeofday( &ioend_, NULL );
-        log4cpp::Category::getInstance( "mercury" ).info(
-                "%f OPEN(%s) = %d",
-                (double)((ioend_.tv_sec - iostart_.tv_sec) +
-                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
-                pathname,
-                ret );
-
-        return ret;
+        return _open64( pathname, flags, ap );
 }
 
 int myopen64( const char *pathname, int flags, ... )
@@ -494,6 +485,8 @@ int myopen64( const char *pathname, int flags, ... )
         va_list ap;
         va_start( ap, flags );
         va_end( ap );
+
+        gettimeofday( &iostart_, NULL );
         int fd = __open64( pathname, flags, ap );
 
         if( fd == -1 )
@@ -546,6 +539,14 @@ int myopen64( const char *pathname, int flags, ... )
                 }
                 pthread_mutex_unlock( &mutex_ );
         }
+        gettimeofday( &ioend_, NULL );
+        log4cpp::Category::getInstance( "mercury" ).info(
+                "%f OPEN(%s) = %d",
+                (double)((ioend_.tv_sec - iostart_.tv_sec) +
+                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
+                pathname,
+                fd );
+
         free( filename );
         return fd;
 }
@@ -555,8 +556,6 @@ int myopen64( const char *pathname, int flags, ... )
  */
 FILE* fopen( const char *pathname, const char *mode )
 {
-        FILE *fp;
-
         /* before the constructor is called _fopen points to fopen in libc
          * after the constructor is called _fopen points to myfopen
          * after the destructor is called _fopen points back to fopen in libc
@@ -564,17 +563,7 @@ FILE* fopen( const char *pathname, const char *mode )
         if( unlikely( _fopen == NULL ) )
                 _fopen = (FILE* (*)( const char *, const char * ))dlsym( RTLD_NEXT, "fopen" );
 
-        gettimeofday( &iostart_, NULL );
-        fp = _fopen( pathname, mode );
-        gettimeofday( &ioend_, NULL );
-        log4cpp::Category::getInstance( "mercury" ).info(
-                "%f OPEN(%s) = %d",
-                (double)((ioend_.tv_sec - iostart_.tv_sec) +
-                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
-                pathname,
-                fileno( fp ) );
-
-        return fp;
+        return _fopen( pathname, mode );
 }
 
 FILE* myfopen( const char *pathname, const char *mode )
@@ -583,6 +572,8 @@ FILE* myfopen( const char *pathname, const char *mode )
         char * basedir = dirname( (char*)filename );
         std::string path( pathname );
         std::string base( basedir );
+
+        gettimeofday( &iostart_, NULL );
         FILE* fp = __fopen( pathname, mode );
         if( fp == NULL )
         {
@@ -635,6 +626,14 @@ FILE* myfopen( const char *pathname, const char *mode )
                 }
                 pthread_mutex_unlock( &mutex_ );
         }
+        gettimeofday( &ioend_, NULL );
+        log4cpp::Category::getInstance( "mercury" ).info(
+                "%f OPEN(%s) = %d",
+                (double)((ioend_.tv_sec - iostart_.tv_sec) +
+                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
+                pathname,
+                fd );
+
         free( filename );
         return fp;
 }
@@ -644,8 +643,6 @@ FILE* myfopen( const char *pathname, const char *mode )
  */
 FILE* fopen64( const char *pathname, const char *mode )
 {
-        FILE *fp;
-
         /* before the constructor is called _fopen points to fopen in libc
          * after the constructor is called _fopen points to myfopen
          * after the destructor is called _fopen points back to fopen in libc
@@ -653,17 +650,7 @@ FILE* fopen64( const char *pathname, const char *mode )
         if( unlikely( _fopen64 == NULL ) )
                 _fopen64 = (FILE* (*)( const char *, const char * ))dlsym( RTLD_NEXT, "fopen64" );
 
-        gettimeofday( &iostart_, NULL );
-        fp = _fopen64( pathname, mode );
-        gettimeofday( &ioend_, NULL );
-        log4cpp::Category::getInstance( "mercury" ).info(
-                "%f OPEN(%s) = %d",
-                (double)((ioend_.tv_sec - iostart_.tv_sec) +
-                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
-                pathname,
-                fileno( fp ) );
-
-        return fp;
+        return _fopen64( pathname, mode );
 }
 
 FILE* myfopen64( const char *pathname, const char *mode )
@@ -672,6 +659,8 @@ FILE* myfopen64( const char *pathname, const char *mode )
         char * basedir = dirname( (char*)filename );
         std::string path( pathname );
         std::string base( basedir );
+
+        gettimeofday( &iostart_, NULL );
         FILE* fp = __fopen64( pathname, mode );
         if( fp == NULL )
         {
@@ -724,6 +713,14 @@ FILE* myfopen64( const char *pathname, const char *mode )
                 }
                 pthread_mutex_unlock( &mutex_ );
         }
+        gettimeofday( &ioend_, NULL );
+        log4cpp::Category::getInstance( "mercury" ).info(
+                "%f OPEN(%s) = %d",
+                (double)((ioend_.tv_sec - iostart_.tv_sec) +
+                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
+                pathname,
+                fd );
+
         free( filename );
         return fp;
 }
@@ -733,8 +730,6 @@ FILE* myfopen64( const char *pathname, const char *mode )
  */
 int close( int fd )
 {
-        int ret;
-
         /* before the constructor is called _close points to close in libc
          * after the constructor is called _close points to myclose
          * after the destructor is called _close points back to close in libc
@@ -742,20 +737,12 @@ int close( int fd )
         if( unlikely( _close == NULL ) )
                 _close = (int (*)( int ))dlsym( RTLD_NEXT, "close" );
 
-        gettimeofday( &iostart_, NULL );
-        ret = _close( fd );
-        gettimeofday( &ioend_, NULL );
-        log4cpp::Category::getInstance( "mercury" ).info(
-                "%f CLOSE(%d)",
-                (double)((ioend_.tv_sec - iostart_.tv_sec) +
-                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
-                fd );
-
-        return ret;
+        return _close( fd );
 }
 
 int myclose( int fd )
 {
+        gettimeofday( &iostart_, NULL );
         pthread_mutex_lock( &mutex_ );
         std::list<int>::iterator it = std::find( files_->begin( ), files_->end( ), fd );
         pthread_mutex_unlock( &mutex_ );
@@ -788,7 +775,15 @@ int myclose( int fd )
                 files_->erase( it );
                 pthread_mutex_unlock( &mutex_ );
         }
-        return __close( fd );
+        int ret = __close( fd );
+        gettimeofday( &ioend_, NULL );
+        log4cpp::Category::getInstance( "mercury" ).info(
+                "%f CLOSE(%d)",
+                (double)((ioend_.tv_sec - iostart_.tv_sec) +
+                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
+                fd );
+
+        return ret;
 }
 
 /** ==============================================================
@@ -796,8 +791,6 @@ int myclose( int fd )
  */
 int fclose( FILE *fp )
 {
-        int ret;
-
         /* before the constructor is called _fclose points to fclose in libc
          * after the constructor is called _fclose points to myfclose
          * after the destructor is called _fclose points back to fclose in libc
@@ -805,20 +798,12 @@ int fclose( FILE *fp )
         if( unlikely( _fclose == NULL ) )
                 _fclose = (int (*)( FILE * ))dlsym( RTLD_NEXT, "fclose" );
 
-        gettimeofday( &iostart_, NULL );
-        ret = _fclose( fp );
-        gettimeofday( &ioend_, NULL );
-        log4cpp::Category::getInstance( "mercury" ).info(
-                "%f CLOSE(%d)",
-                (double)((ioend_.tv_sec - iostart_.tv_sec) +
-                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
-                fileno( fp ) );
-
-        return ret;
+        return _fclose( fp );
 }
 
 int myfclose( FILE *fp )
 {
+        gettimeofday( &iostart_, NULL );
         int fd = fileno( fp );
         pthread_mutex_lock( &mutex_ );
         std::list<int>::iterator it = std::find( files_->begin( ), files_->end( ), fd );
@@ -852,7 +837,15 @@ int myfclose( FILE *fp )
                 files_->erase( it );
                 pthread_mutex_unlock( &mutex_ );
         }
-        return __fclose( fp );
+        int ret = __fclose( fp );
+        gettimeofday( &ioend_, NULL );
+        log4cpp::Category::getInstance( "mercury" ).info(
+                "%f CLOSE(%d)",
+                (double)((ioend_.tv_sec - iostart_.tv_sec) +
+                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
+                fileno( fp ) );
+
+        return ret;
 }
 
 /** ==============================================================
@@ -860,8 +853,6 @@ int myfclose( FILE *fp )
  */
 ssize_t read( int fd, void *buf, size_t count )
 {
-        ssize_t ret;
-
         /* before the constructor is called _read points to read in libc
          * after the constructor is called _read points to myread
          * after the destructor is called _read points back to read in libc
@@ -869,21 +860,12 @@ ssize_t read( int fd, void *buf, size_t count )
         if( unlikely( _read == NULL ) )
                 _read = (ssize_t (*)( int, void*, size_t ))dlsym( RTLD_NEXT, "read" );
 
-        gettimeofday( &iostart_, NULL );
-        ret = _read( fd, buf, count );
-        gettimeofday( &ioend_, NULL );
-        log4cpp::Category::getInstance( "mercury" ).info(
-                "%f READ(%d) = %lu",
-                (double)((ioend_.tv_sec - iostart_.tv_sec) +
-                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
-                fd,
-                ret );
-
-        return ret;
+        return _read( fd, buf, count );
 }
 
 ssize_t myread( int fd, void *buf, size_t count )
 {
+        gettimeofday( &iostart_, NULL );
         off_t offset = lseek( fd, 0, SEEK_CUR );
         pthread_mutex_lock( &mutex_ );
         std::list<int>::iterator it = std::find( files_->begin( ), files_->end( ), fd );
@@ -913,7 +895,16 @@ ssize_t myread( int fd, void *buf, size_t count )
                         exit (EXIT_FAILURE);
                 }
         }
-        return __read( fd, buf, count );
+        ssize_t ret = __read( fd, buf, count );
+        gettimeofday( &ioend_, NULL );
+        log4cpp::Category::getInstance( "mercury" ).info(
+                "%f READ(%d) = %lu",
+                (double)((ioend_.tv_sec - iostart_.tv_sec) +
+                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
+                fd,
+                ret);
+
+        return ret;
 }
 
 /** ==============================================================
@@ -921,8 +912,6 @@ ssize_t myread( int fd, void *buf, size_t count )
  */
 ssize_t pread( int fd, void *buf, size_t count, off_t offset )
 {
-        ssize_t ret;
-
         /* before the constructor is called _pread points to pread in libc
          * after the constructor is called _pread points to mypread
          * after the destructor is called _pread points back to pread in libc
@@ -930,21 +919,12 @@ ssize_t pread( int fd, void *buf, size_t count, off_t offset )
         if( unlikely( _pread == NULL ) )
                 _pread = (ssize_t (*)( int, void*, size_t, off_t ))dlsym( RTLD_NEXT, "pread" );
 
-        gettimeofday( &iostart_, NULL );
-        ret = _pread( fd, buf, count, offset );
-        gettimeofday( &ioend_, NULL );
-        log4cpp::Category::getInstance( "mercury" ).info(
-                "%f READ(%d) = %lu",
-                (double)((ioend_.tv_sec - iostart_.tv_sec) +
-                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
-                fd,
-                ret );
-
-        return ret;
+        return _pread( fd, buf, count, offset );
 }
 
 ssize_t mypread( int fd, void* buf, size_t count, off_t offset )
 {
+        gettimeofday( &iostart_, NULL );
         pthread_mutex_lock( &mutex_ );
         std::list<int>::iterator it = std::find( files_->begin( ), files_->end( ), fd );
         pthread_mutex_unlock( &mutex_ );
@@ -973,7 +953,17 @@ ssize_t mypread( int fd, void* buf, size_t count, off_t offset )
                         exit( EXIT_FAILURE );
                 }
         }
-        return __pread( fd, buf, count, offset );
+        ssize_t ret =  __pread( fd, buf, count, offset );
+        gettimeofday( &ioend_, NULL );
+        log4cpp::Category::getInstance( "mercury" ).info(
+                "%f READ(%d) = %lu",
+                (double)((ioend_.tv_sec - iostart_.tv_sec) +
+                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
+                fd,
+                ret );
+
+        return ret;
+
 }
 
 /** ==============================================================
@@ -981,8 +971,6 @@ ssize_t mypread( int fd, void* buf, size_t count, off_t offset )
  */
 size_t fread( void *ptr, size_t size, size_t nmemb, FILE *stream )
 {
-        size_t ret;
-
         /* before the constructor is called _fread points to fread in libc
          * after the constructor is called _fread points to myfread
          * after the destructor is called _fread points back to fread in libc
@@ -990,21 +978,12 @@ size_t fread( void *ptr, size_t size, size_t nmemb, FILE *stream )
         if( unlikely( _fread == NULL ) )
                 _fread = (size_t (*)( void*, size_t, size_t, FILE* ))dlsym( RTLD_NEXT, "fread" );
 
-        gettimeofday( &iostart_, NULL );
-        ret = _fread( ptr, size, nmemb, stream );
-        gettimeofday( &ioend_, NULL );
-        log4cpp::Category::getInstance( "mercury" ).info(
-                "%f READ(%d) = %li",
-                (double)((ioend_.tv_sec - iostart_.tv_sec) +
-                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
-                fileno( stream ),
-                ret );
-
-        return ret;
+        return _fread( ptr, size, nmemb, stream );
 }
 
 size_t myfread( void *ptr, size_t size, size_t nmemb, FILE *stream )
 {
+        gettimeofday( &iostart_, NULL );
         int fd = fileno( stream );
         pthread_mutex_lock( &mutex_ );
         std::list<int>::iterator it = std::find( files_->begin( ), files_->end( ), fd );
@@ -1034,5 +1013,14 @@ size_t myfread( void *ptr, size_t size, size_t nmemb, FILE *stream )
                         exit( EXIT_FAILURE );
                 }
         }
-        return __fread( ptr, size, nmemb, stream );
+        size_t ret = __fread( ptr, size, nmemb, stream );
+        gettimeofday( &ioend_, NULL );
+        log4cpp::Category::getInstance( "mercury" ).info(
+                "%f READ(%d) = %li",
+                (double)((ioend_.tv_sec - iostart_.tv_sec) +
+                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
+                fileno( stream ),
+                ret );
+
+        return ret;
 }
