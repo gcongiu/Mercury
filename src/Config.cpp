@@ -203,7 +203,7 @@ void mercury::Config::release( )
 
         delete this;
 
-        //configMap_.erase( pathname );
+        configMap_.erase( pathname );
 }
 
 /**

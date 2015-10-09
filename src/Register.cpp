@@ -31,10 +31,10 @@ mercury::RegisterLog::RegisterLog( ) {}
  */
 mercury::RegisterLog::~RegisterLog( )
 {
-        //std::map<key_t, mercury::AdvisorThread*>::iterator it = pathnameMap_.begin( );
-        //for( ; it != pathnameMap_.end( ); it++ )
-        //        if( it->second )
-        //                delete it->second;
+        std::map<key_t, mercury::AdvisorThread*>::iterator it = pathnameMap_.begin( );
+        for( ; it != pathnameMap_.end( ); it++ )
+                if( it->second )
+                        delete it->second;
 }
 
 /**

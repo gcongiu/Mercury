@@ -287,6 +287,12 @@ int __open_2( const char *pathname, int flags )
         gettimeofday( &iostart_, NULL );
         ret = _open_2( pathname, flags );
         gettimeofday( &ioend_, NULL );
+        log4cpp::Category::getInstance( "mercury" ).info(
+                "%f OPEN(%s) = %d ",
+                (double)((ioend_.tv_sec - iostart_.tv_sec) +
+                         (ioend_.tv_usec - iostart_.tv_usec) / 1000000.0),
+                pathname,
+                ret );
 
         return ret;
 }
@@ -350,6 +356,7 @@ int myopen_2( const char *pathname, int flags )
                 }
                 pthread_mutex_unlock( &mutex_ );
         }
+        free( filename );
         return fd;
 }
 
@@ -435,6 +442,7 @@ int myopen( const char *pathname, int flags, ... )
                 }
                 pthread_mutex_unlock( &mutex_ );
         }
+        free( filename );
         return fd;
 }
 
@@ -529,6 +537,7 @@ int myopen64( const char *pathname, int flags, ... )
                 }
                 pthread_mutex_unlock( &mutex_ );
         }
+        free( filename );
         return fd;
 }
 
@@ -617,6 +626,7 @@ FILE* myfopen( const char *pathname, const char *mode )
                 }
                 pthread_mutex_unlock( &mutex_ );
         }
+        free( filename );
         return fp;
 }
 
@@ -705,6 +715,7 @@ FILE* myfopen64( const char *pathname, const char *mode )
                 }
                 pthread_mutex_unlock( &mutex_ );
         }
+        free( filename );
         return fp;
 }
 

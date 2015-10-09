@@ -275,6 +275,7 @@ int myopen_2( const char *pathname, int flags )
                 pathname,
                 fd );
 
+        free( filename );
         return fd;
 }
 
@@ -333,6 +334,7 @@ int myopen( const char *pathname, int flags, ... )
                 pathname,
                 fd );
 
+        free( filename );
         return fd;
 }
 
@@ -394,6 +396,7 @@ int myopen64( const char *pathname, int flags, ... )
                 pathname,
                 fd );
 
+        free( filename );
         return fd;
 }
 
@@ -449,6 +452,7 @@ FILE* myfopen( const char *pathname, const char *mode )
                 pathname,
                 fileno( fp ) );
 
+        free( filename );
         return fp;
 }
 
@@ -504,6 +508,7 @@ FILE* myfopen64( const char *pathname, const char *mode )
                 pathname,
                 fileno( fp ) );
 
+        free( filename );
         return fp;
 }
 
