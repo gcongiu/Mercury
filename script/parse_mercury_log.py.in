@@ -1,0 +1,56 @@
+#!/usr/bin/python
+#########################################################
+# Author: Giuseppe Congiu <giuseppe.congiu@seagate.com> #
+# Name:   parse_mercury_log.py                          #
+#########################################################
+import re
+from optparse import OptionParser
+
+if __name__ == "__main__":
+
+    # check the command line input
+
+    parser = OptionParser()
+    parser.add_option("-f", "--file", dest="filename",
+                      help="log input FILE to be processed", metavar="FILE")
+
+    (options, args) = parser.parse_args()
+
+    logfile = open(str(options.filename), 'r')
+
+    # keeps track of <fd, filename>
+    _fd = {}
+    _open = {}
+    _read = {}
+    _close = {}
+
+    regex_open = re.compile('.+\s+([0-9]+.[0-9]{6})\sOPEN\(([a-zA-Z0-9\/\.-_]+)\)\s=\s([0-9]+)')
+    regex_read = re.compile('.+\s+([0-9]+.[0-9]{6})\sREAD\(([0-9]+)\)\s=\s([0-9]+)')
+    regex_close = re.compile('.+\s+([0-9]+.[0-9]{6})\sCLOSE\(([0-9]+)\)')
+
+    # parse the log file
+    for line in logfile:
+        ret = re.search(regex_open, line);
+        if ret is not None:
+            _fd[int(ret.group(3))] = ret.group(2)
+            if ret.group(2) not in _open:
+                _open[ret.group(2)] = float(ret.group(1))
+                _read[ret.group(2)] = float(0.0)
+                _close[ret.group(2)] = float(0.0)
+            else:
+                _open[ret.group(2)] += float(ret.group(1))
+        elif re.search(regex_read, line) is not None:
+            ret = re.search(regex_read, line)
+            if int(ret.group(2)) in _fd:
+                _read[_fd[int(ret.group(2))]] += float(ret.group(1))
+        elif re.search(regex_close, line) is not None:
+            ret = re.search(regex_close, line)
+            if int(ret.group(2)) in _fd:
+                _close[_fd[int(ret.group(2))]] += float(ret.group(1))
+                _fd.pop(int(ret.group(2)))
+
+    print 'filename,open,read,close'
+    for k in _read.keys():
+        print k+','+str(_open[k])+','+str(_read[k])+','+str(_close[k])
+
+    logfile.close()
