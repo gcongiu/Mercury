@@ -114,7 +114,8 @@ mercury::RegisterLog * register_;
 static std::list<std::string> * paths_ = NULL; //valid paths
 
 // timers
-static struct timeval start_, end_, iostart_, ioend_;
+static struct timeval start_, end_;
+__thread struct timeval iostart_, ioend_;
 
 // config file
 static char *config_file_ = NULL;
@@ -242,7 +243,6 @@ void __attribute__(( destructor( 65535 ) )) SAIO_Finalize( void )
 
         /* fini flag */
         initialized_ = false;
-
 }
 
 /** ==============================================================
