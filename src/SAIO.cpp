@@ -123,7 +123,7 @@ static char *config_file_ = NULL;
 // global initialization status
 static bool initialized_ = 0;
 
-// Stand Alone I/O initialization (should be last after log4cpp and Config.o)
+/* Self Assisted I/O initialization (should be last after log4cpp and Config.o) */
 void __attribute__(( constructor( 65535 ) )) SAIO_Init( void )
 {
         /* already initialized by the main */
@@ -200,7 +200,17 @@ void __attribute__(( constructor( 65535 ) )) SAIO_Init( void )
         initialized_ = true;
 }
 
-/* this destructor has to be invoked first (before libc otherwise free() won't be found) */
+/* this destructor has to be invoked first (before libc otherwise free() won't be found)
+ *
+ * NOTE: SAIO_Finalize() invokes the Register destructor. Although this was initialized
+ *       by SAIO_Init(), it further invokes the destruction of internal members (i.e.
+ *       advisor thread objects) which were allocated in the process address space (heap).
+ *       The process address space gets destroyed when the main function returns. At this
+ *       point the dynamic linker de-initializes libSAIO causing the application to crash,
+ *       typically with a double-free corruption error.
+ *       To avoid this problem call SAIO_Finalize() explicitly before the main returns in
+ *       your application.
+ */
 void __attribute__(( destructor( 65535 ) )) SAIO_Finalize( void )
 {
         /* already finalized by main */

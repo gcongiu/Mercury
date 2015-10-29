@@ -31,7 +31,7 @@ libAIO_la_CPPFLAGS = -g -O2 -Wall -I$(top_srcdir)/include
 libAIO_la_SOURCES = AIO.cpp \
 		    Config.cpp # additional libs
 
-# Stand Alone I/O library
+# Self Assisted I/O library
 libSAIO_la_LIBADD = -ljsoncpp -lpcrecpp -lm -lrt -ldl -lpthread -llog4cpp
 libSAIO_la_LDFLAGS = -version-info 0:0:0
 
