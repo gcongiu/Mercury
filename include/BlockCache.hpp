@@ -29,6 +29,20 @@
 
 #define GPFS_SUPER_MAGIC 0x47504653
 
+/*
+ * NOTE: BlockCache could be implemented as GenericBlockCache
+ *       defining getBlock as virtual function. Then, there
+ *       would be other two derived classes (one for each FS
+ *       interface) implementing getBlockPosix() for POSIX FS
+ *       and getBlockGPFS for GPFS. Nevertheless, this would
+ *       require the singleton interface to change a little to
+ *       pass the file descriptor to getInstance() in order to
+ *       allow the implementation to decide which constructor
+ *       to use.
+ *       Using function pointers here is more similar to a C
+ *       style approach but helps keeping the singleton class
+ *       unchanged.
+ */
 namespace mercury
 {
         /* willneed block data structure */

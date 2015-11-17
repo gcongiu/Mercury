@@ -11,7 +11,7 @@ During the development phase the following libraries and environments were used:
 Installing Mercury
 ------------------
 
-   * Run "./configure", "make", and "make install".
+   * Run "./autogen.sh, ./configure", "make", and "make install".
 
    * Make sure AdviceManager and libAIO.so are installed in the system paths.
 
